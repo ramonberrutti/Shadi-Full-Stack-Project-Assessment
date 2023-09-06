@@ -1,9 +1,11 @@
 
 const express = require("express");
-const app = express();
 const cors = require ("cors");
+const { Pool } = require("pg");
+
+const app = express();
+
 app.use(cors());
-const videos = require("../exampleresponse.json"); 
 
 app.use(express.json());
 
@@ -11,16 +13,24 @@ const { body, validationResult } = require("express-validator");
 
 const port = process.env.PORT || 3000;
 
-
+const db = new Pool({
+    user: "postgres", // replace with you username
+    host: "localhost",
+    database: "videos",
+    password: "postgres",
+    port: 5432,
+});
 
 // Store and retrieve your videos from here
 // If you want, you can copy "exampleresponse.json" into here to have some data to work with
-// let welcomeVideo = {
+// const welcomeVideo = {
 //   id: "0",
 //   title: "Never Gonna Give You Up",
 //   url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 // };
-// const videos = [welcomeVideo];
+// We want to store the videos array in another type of storage.
+// In this case Postgres.
+// const videos = [];
 
 
 // GET "/"
@@ -30,11 +40,13 @@ app.get("/", (req, res) => {
 });
 
 // GET "/videos"
-app.get("/videos", function (req, res) {
-  if (videos.length === 0) {
-    return res.status(404).json({ error: "no videos found" });
-  }
-  res.json(videos);
+app.get("/videos", async function (req, res) {
+    const result = await db.query("SELECT * FROM videos");
+    console.log(result);
+    if (result.rows.length === 0) {
+        return res.status(404).json({ error: "no videos found" });
+    }
+    res.json(result.rows);
 });
 
 //adding new video
@@ -55,7 +67,7 @@ app.post(
       id: videos.length.toString(),
       title: req.body.title,
       url: req.body.url,
-       rating:req.body.rating
+        rating:req.body.rating
     };
     videos.push(newVideo);
     res.status(201).json(videos);
@@ -75,15 +87,19 @@ app.get("/videos/search", function (req, res) {
 });
 
 // //search video by id for example/videos/:id
-// app.get("/videos/:id", function (req, res) {
-//   const videoId = parseInt(req.params.id);
-//   const video = videos.find((m) => m.id === videoId);
-//   if (!video) {
-//     return res.status(404).send({ error: "This id doesn't exist" });
-//   }
-//   res.status(200).send({ video });
-// });
+app.get("/videos/:id", async function (req, res) {
+    const videoId = parseInt(req.params.id);
+    // Add the query.
+    const result = await db.query("SELECT * FROM videos WHERE id = $1", [videoId]);
+    console.log(result);
+    if (result.rows.length === 0) {
+        return res.status(404).send({ error: "This id doesn't exist" });
+    }
+    res.status(200).send(result.rows[0]);
+});
+
 //updating video with id
+// FIXME.
 app.put("/videos/:id", function (req, res) {
   const video = videos.find((m) => m.id == req.params.id);
   if (!video) {
