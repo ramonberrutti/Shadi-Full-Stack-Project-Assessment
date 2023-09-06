@@ -1,4 +1,4 @@
-
+require('dotenv').config();
 const express = require("express");
 const cors = require ("cors");
 const { Pool } = require("pg");
@@ -14,11 +14,11 @@ const { body, validationResult } = require("express-validator");
 const port = process.env.PORT || 3000;
 
 const db = new Pool({
-    user: "postgres", // replace with you username
-    host: "localhost",
-    database: "videos",
-    password: "postgres",
-    port: 5432,
+    user: process.env.POSTGRES_USER, // replace with you username
+    host: process.env.POSTGRES_HOST,
+    database: process.env.POSTGRES_DATABASE,
+    password: process.env.POSTGRES_PASSWORD,
+    port: process.env.POSTGRES_PORT,
 });
 
 // Store and retrieve your videos from here
